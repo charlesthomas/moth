@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from distustils.core import setup
+from distutils.core import setup
 from os.path import dirname, join
 
 VERSION = open( join( dirname( __file__ ), 'VERSION' ) ).read()
