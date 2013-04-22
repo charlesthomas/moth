@@ -9,21 +9,8 @@ class Moth(object):
     def __init__(self, collection):
         self.collection = collection
 
-    def create_nonce(self, email, expire=300, ip=None, nonce_size=32):
-        nonce = ''.join(
-            choice(ascii_letters + digits) for x in range(nonce_size)
-        )
-
-        if self.store_nonce(nonce, email, expire, ip):
-            return nonce
-
-        raise mothException("failed to store nonce")
-
-    def create_token(self, email, nonce, ip=None, expire=None, token_size=64,
+    def create_token(self, email, ip=None, expire=None, token_size=64,
                      ret_val=None):
-        if not self._auth_nonce(nonce, email, ip):
-            raise mothException('failed to authorize nonce')
-
         token = ''.join(
             choice(ascii_letters + digits) for x in range(token_size)
         )
@@ -33,25 +20,8 @@ class Moth(object):
 
         raise mothException("failed to store token")
 
-    def _auth_nonce(self, nonce, email, ip=None):
-        user = self._fetch_user_data(email)
-        if not user: return False
-        if nonce not in user.get('nonce', {}): return False
-
-        self.remove_nonce(nonce, email)
-
-        nonce_ip = user['nonce'][nonce].get('ip')
-        if nonce_ip and ip != nonce_ip:
-            return False
-
-        nonce_expire = user['nonce'][nonce]['expire']
-        if nonce_expire < datetime.now().strftime('%s'):
-            return False
-
-        return True
-
-    def auth_token(self, token, ip=None):
-        user = self._fetch_user_data(token=token)
+    def auth_token(self, token, email, ip=None):
+        user = self.fetch_user_data(email)
         if not user: return False
 
         if token not in user['token']: return False
@@ -71,18 +41,6 @@ class Moth(object):
         if ret_val: return ret_val
         return True
 
-    def store_nonce(self, nonce, email, expire=300, ip=None):
-        payload = {}
-        if ip: payload['ip'] = ip
-        expire = (datetime.now() + timedelta(seconds=expire)).strftime('%s')
-        payload['expire'] = expire
-
-        return self.collection.update(
-            {'email': email},
-            {'$set':{'nonce': {nonce: payload}}},
-            upsert=True
-        )
-
     def store_token(self, token, email, ip=None, expire=None, ret_val=None):
         payload = {}
         if ip: payload['ip'] = ip
@@ -91,9 +49,9 @@ class Moth(object):
             expire = datetime.now() + timedelta(days = expire)
             payload['expire'] = expire.strftime('%s')
         
-        existing = self._fetch_user_data(email=email)
+        existing = self.fetch_user_data(email)
         if existing:
-            tokens = existing.get('token', {})
+            tokens = existing['token']
             tokens[token] = payload
 
             return self.collection.update(
@@ -106,23 +64,14 @@ class Moth(object):
             'email' : email.lower(),
         })
 
-    def _fetch_user_data(self, email=None, token=None):
-        if email:
-            return self.collection.find_one({ 'email' : email.lower() })
-        if token:
-            return self.collection.find_one({'token': {token: {}}})
+    def fetch_user_data(self, email):
+        return self.collection.find_one({ 'email' : email.lower() })
 
     def remove_user(self, id):
         return self.collection.remove(id)
 
-    def remove_nonce(self, nonce, email):
-        return self.collection.update(
-            {'email': email},
-            {'$unset': {'nonce': {nonce: {}}}}
-        )
-
     def remove_token(self, token, email):
-        user = self._fetch_user_data(email)
+        user = self.fetch_user_data(email)
         if not token in user['token']:
             raise mothException("token doesn't exist")
 
