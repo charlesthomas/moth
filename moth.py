@@ -19,59 +19,52 @@ class Moth(object):
             self.db = MongoClient(host, port)[database]
 
     def create_token(self, email, ip=None, expire=None, token_size=64,
-                     ret_val=None):
+                     retval=None):
         token = ''.join(
             choice(ascii_letters + digits) for x in range(token_size)
         )
 
-        payload = {'token': token}
+        payload = {'email': email.lower(), 'token': token}
         if ip: payload.update(ip=ip)
         if expire:
             expire = (datetime.now() + timedelta(days=expire)).strftime('%s')
             payload.update(expire=expire)
-        if ret_val:
-            payload.update(ret_val=ret_val)
 
-        self.db.tokens.update({'email': email.lower()},
-                              {'$push': {'tokens': payload}},
-                              upsert=True)
+        self.db.tokens.insert(payload)
+
+        if retval:
+            self.set_retval(email, retval)
 
         return token
 
-    def auth_token(self, token, email, ip=None):
-        data = self.db.tokens.find_one({'email': email.lower()})
-        logging.info(data)
+    def auth_token(self, email, token, ip=None):
+        criteria = {'email': email.lower(), 'token': token}
+        if ip: criteria.update(ip=ip)
+
+        data = self.db.tokens.find_one(criteria)
         if not data: return False
 
-        stored_token = None
-        for token_obj in data['tokens']:
-            if token_obj['token'] == token:
-                stored_token = token_obj
-                logging.info('FOUND IT')
-                break
-        if stored_token is None: return False
-
-        #over-complicated so if the stored token doesn't have an ip,
-        #passing one to auth won't return False
-        token_ip = stored_token.get('ip')
-        if token_ip and ip != token_ip:
-            return False
-
-        token_expire = stored_token.get('expire')
+        token_expire = data.get('expire')
         if token_expire and token_expire < datetime.now().strftime('%s'):
             self.remove_token(token, email)
             return False
 
-        ret_val = stored_token.get('ret_val')
-        if ret_val: return ret_val
-        return True
-
-    def _fetch_user_data(self, email):
-        return self.db.tokens.find_one({'email': email.lower()})
+        return self.fetch_retval(email)
 
     def remove_user(self, email):
-        return self.db.tokens.remove({'email': email.lower()})
+        self.db.tokens.remove({'email': email.lower()})
+        self.db.retvals.remove({'email': email.lower()})
 
-    def remove_token(self, token, email):
-        return self.db.tokens.update({'email': email.lower()},
-                                     {'$pull': {'tokens':{'token': token}}})
+    def remove_token(self, email, token):
+        return self.db.tokens.remove({'email': email.lower(), 'token': token})
+
+    def set_retval(self, email, retval):
+        return self.db.retvals.update({'email': email.lower()},
+                                      {'email': email.lower(),
+                                       'retval': retval},
+                                      upsert=True)
+
+    def fetch_retval(self, email):
+        retval = self.db.retvals.find_one({'email': email.lower()})
+        if retval is None: return None
+        return retval.get('retval', None)
