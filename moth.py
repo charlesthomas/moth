@@ -44,7 +44,11 @@ class Moth(object):
         data = self.db.tokens.find_one(criteria)
         if not data: return False
 
-        token_expire = data.get('expire')
+        token_ip = data.get('ip', None)
+        if token_ip is not None and token_ip != ip:
+            return False
+
+        token_expire = data.get('expire', None)
         if token_expire and token_expire < datetime.now().strftime('%s'):
             self.remove_token(token, email)
             return False
