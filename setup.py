@@ -13,7 +13,7 @@ setup(
     author_email = 'ch@rlesthom.as',
     packages = ['%s' % NAME],
     url = 'http://code.cha.rlesthom.as/%s' % NAME,
-    license = 'MIT'
+    license = 'MIT',
     description = DESCRIPTION,
     long_description = LONG_DESC,
     install_requires = ["motor >= 0.1"],

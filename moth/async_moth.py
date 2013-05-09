@@ -89,7 +89,10 @@ class AsyncMoth(object):
             callback(False)
 
         retval = yield Task(self.fetch_retval, email)
-        callback(retval)
+        if retval is None:
+            callback(True)
+        else:
+            callback(retval)
 
     @engine
     def remove_user(self, email, callback):
@@ -130,5 +133,6 @@ class AsyncMoth(object):
         result = yield Op(self.db.retvals.find_one,
                                 {'email': email.lower()})
         if result is None:
-            callback(True)
-        callback(result.get('retval', True))
+            callback(None)
+        else:
+            callback(result.get('retval', True))
