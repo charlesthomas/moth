@@ -1,4 +1,3 @@
 include README.rst
 include VERSION
 include *.txt
-include async_example.py
