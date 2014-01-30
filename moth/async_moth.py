@@ -4,7 +4,7 @@ from random import choice
 from string import ascii_letters, digits
 
 from motor import MotorClient, Op
-from tornado.gen import engine, Task
+from tornado.gen import coroutine, Return, Task
 
 class mothError(Exception): pass
 
@@ -35,9 +35,9 @@ class AsyncMoth(object):
 
         self.db = MotorClient(connection_string).open_sync()[database]
 
-    @engine
+    @coroutine
     def create_token(self, email, ip=None, expire=None, token_size=64,
-                     retval=None, callback=None):
+                     retval=None):
         '''
         generate a token of a given length, tied to email address, and store it
         optionally store ip address, expiration (in days), and retval (see
@@ -60,10 +60,10 @@ class AsyncMoth(object):
         if retval:
             yield Task(self.set_retval, email, retval)
 
-        callback(token)
+        raise Return(token)
 
-    @engine
-    def auth_token(self, email, token, ip=None, callback=None):
+    @coroutine
+    def auth_token(self, email, token, ip=None):
         '''
         return true if email address and token match. if ip exists, also verify
         that. if expiration was set when create_token was called, verify that
@@ -76,44 +76,42 @@ class AsyncMoth(object):
 
         data = yield Op(self.db.tokens.find_one, criteria)
         if not data:
-            callback(False)
+            raise Return(False)
 
         token_ip = data.get('ip', None)
         if token_ip is not None and token_ip != ip:
-            callback(False)
+            raise Return(False)
 
         token_expire = data.get('expire', None)
         if token_expire is not None and \
         token_expire < datetime.now().strftime('%s'):
             yield Task(self.remove_token, token, email)
-            callback(False)
+            raise Return(False)
 
         retval = yield Task(self.fetch_retval, email)
         if retval is None:
-            callback(True)
+            raise Return(True)
         else:
-            callback(retval)
+            raise Return(retval)
 
-    @engine
-    def remove_user(self, email, callback):
+    @coroutine
+    def remove_user(self, email):
         '''
         remove all user data from Moth
         '''
         yield Op(self.db.tokens.remove, {'email': email.lower()})
         yield Op(self.db.retvals.remove, {'email': email.lower()})
-        callback()
 
-    @engine
-    def remove_token(self, email, token, callback):
+    @coroutine
+    def remove_token(self, email, token):
         '''
         remove token from Moth
         '''
         yield Op(self.db.tokens.remove,
                        {'email': email.lower(), 'token': token})
-        callback()
 
-    @engine
-    def set_retval(self, email, retval, callback):
+    @coroutine
+    def set_retval(self, email, retval):
         '''
         store retval associated with the email address
         when auth_token is called, if the authentication was successful, and a
@@ -122,10 +120,9 @@ class AsyncMoth(object):
         '''
         yield Op(self.db.retvals.update, {'email': email.lower()},
                        {'email': email.lower(), 'retval': retval}, upsert=True)
-        callback()
 
-    @engine
-    def fetch_retval(self, email, callback):
+    @coroutine
+    def fetch_retval(self, email):
         '''
         if retval exists, return it
         if it doesn't, return True
@@ -133,6 +130,6 @@ class AsyncMoth(object):
         result = yield Op(self.db.retvals.find_one,
                                 {'email': email.lower()})
         if result is None:
-            callback(None)
+            raise Return(None)
         else:
-            callback(result.get('retval', True))
+            raise Return(result.get('retval', True))

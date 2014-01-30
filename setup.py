@@ -16,5 +16,6 @@ setup(
     license = 'MIT',
     description = DESCRIPTION,
     long_description = LONG_DESC,
+    test_suite = 'tests',
     install_requires = ["motor >= 0.1"],
 )
