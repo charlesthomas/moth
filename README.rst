@@ -1,6 +1,8 @@
 ====
 moth
 ====
+.. image:: https://travis-ci.org/charlesthomas/moth.png?branch=master   :target: https://travis-ci.org/charlesthomas/moth
+
 **Moth** is an email-only authentication scheme
 email auth -> mauth -> moth
 
