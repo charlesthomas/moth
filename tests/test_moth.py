@@ -29,19 +29,6 @@ class MothTest(TestCase):
         found = self.mongo.tokens.find_one(dict(email=email, token=token))
         self.assertIsNotNone(found)
 
-        ### WTF IS THIS SHIT? WERE THESE SUPPOSED TO BE AUTH TESTS? ###
-        # bad_email = self.mongo.tokens.find_one(dict(email='bad@email.com',
-                                               # token=token))
-        # self.assertIsNone(bad_email)
-# 
-        # short_token = self.mongo.tokens.find_one(dict(email=email,
-                                                      # token=token[:30]))
-        # self.assertIsNone(short_token)
-# 
-        # long_token = self.mongo.tokens.find_one(dict(email=email,
-                                                     # token=token + 'x'))
-        # self.assertIsNone(long_token)
-
     def test_different_sized_tokens(self):
         small_email = 'small@token.com'
         small_token = self.moth.create_token(small_email, token_size=32)
