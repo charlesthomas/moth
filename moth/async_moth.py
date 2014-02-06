@@ -6,8 +6,6 @@ from string import ascii_letters, digits
 from motor import MotorClient, Op
 from tornado.gen import coroutine, Return, Task
 
-class mothError(Exception): pass
-
 class AsyncMoth(object):
     '''
     Moth is an email-only authentication scheme

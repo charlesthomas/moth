@@ -6,8 +6,6 @@ from string import ascii_letters, digits
 
 from pymongo import MongoClient
 
-class mothError(Exception): pass
-
 class Moth(object):
     '''
     Moth is an email-only authentication scheme
