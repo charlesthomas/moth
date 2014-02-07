@@ -8,12 +8,7 @@ from pymongo import MongoClient
 
 class Moth(object):
     '''
-    Moth is an email-only authentication scheme
-    e-mail auth -> mauth -> moth
-
-    Sending mail is easy enough with smtplib. Moth doesn't actually send the
-    mail, but it generates tokens, and validates them based on email address,
-    and (optionally) ip address and expiration.
+    :class:`Moth` requires the credentials to log in to MongoDB.
     '''
     def __init__(self, database='moth', host='localhost', port=27017,
                  user=None, pwd=None):
@@ -31,10 +26,10 @@ class Moth(object):
     def create_token(self, email, ip=None, expire=None, token_size=64,
                      retval=None):
         '''
-        generate a token of a given length, tied to email address, and store it
-        optionally store ip address, expiration (in days), and retval (see
-        set_retval for additional information on this)
-        return the token
+        Generate a token of a given length, tied to email address, and store it.
+        Optionally store IP address, expiration (in days), and retval (see
+        set_retval for additional information on this).
+        Return the token
         '''
         token = ''.join(
             choice(ascii_letters + digits) for x in range(token_size)
@@ -55,10 +50,10 @@ class Moth(object):
 
     def auth_token(self, email, token, ip=None):
         '''
-        return true if email address and token match. if ip exists, also verify
-        that. if expiration was set when create_token was called, verify that
-        the token hasn't expired.
-        if for any reason the token is not valid, remove it
+        Return True if email address and token match. If IP exists, also verify
+        that. If expiration was set when ``create_token`` was called, verify
+        that the token hasn't expired.  If for any reason the token is not
+        valid, remove it.
         '''
         criteria = {'email': email.lower(), 'token': token}
         if ip: criteria.update(ip=ip)
@@ -80,23 +75,23 @@ class Moth(object):
 
     def remove_user(self, email):
         '''
-        remove all user data from Moth
+        Remove all user data from Moth.
         '''
         self.db.tokens.remove({'email': email.lower()})
         self.db.retvals.remove({'email': email.lower()})
 
     def remove_token(self, email, token):
         '''
-        remove token from Moth
+        Remove token from Moth.
         '''
         return self.db.tokens.remove({'email': email.lower(), 'token': token})
 
     def set_retval(self, email, retval):
         '''
-        store retval associated with the email address
-        when auth_token is called, if the authentication was successful, and a
-        retval exists, it will be returned by the auth_token call. if retval
-        does not exist, auth_token returns True
+        Store retval associated with the email address.
+        When auth_token is called, if the authentication was successful, and a
+        retval exists, it will be returned by the ``auth_token`` call. If retval
+        does not exist, auth_token returns True.
         '''
         return self.db.retvals.update({'email': email.lower()},
                                       {'email': email.lower(),
@@ -105,8 +100,8 @@ class Moth(object):
 
     def fetch_retval(self, email):
         '''
-        if retval exists, return it
-        if it doesn't, return True
+        If retval exists, return it.
+        If it doesn't, return True.
         '''
         retval = self.db.retvals.find_one({'email': email.lower()})
         if retval is None:
