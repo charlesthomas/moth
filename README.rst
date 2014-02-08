@@ -91,4 +91,4 @@ Examples can be found on `ReadTheDocs`_
 .. _moth documentation: https://moth.readthedocs.org/en/latest/moth.html
 .. _moth build status: https://travis-ci.org/charlesthomas/moth
 .. _moth author: mailto:ch@rlesthom.as
-.. _ReadTheDocs: http://moth.readthedocs.org/en/latest/examples/html
+.. _ReadTheDocs: http://moth.readthedocs.org/en/latest/examples.html
